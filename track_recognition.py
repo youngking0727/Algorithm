@@ -267,7 +267,8 @@ def main():
 
     cap = cv2.VideoCapture('666.MP4')
 
-    _, img = cap.read()
+    # _, img = cap.read()
+    img = cv2.imread("1.jpg")
     mvname = 'laotie.mp4'
     if not os.path.isfile(mvname):
         cvwriter = cv2.VideoWriter(mvname, cv2.VideoWriter_fourcc(*'MP4V'), 30, img.shape[-2::-1])
@@ -280,15 +281,10 @@ def main():
     rot = 0
     while True:
         # t0 = time.time()
-        ret, img = cap.read()
-        try:
-            img_row = img.copy()
-        except AttributeError:
-            if ret:
-                continue
-            else:
-                break
+        img = cv2.imread("1.jpg")
+        print(img.shape)
         img = img[cv.scope[0]:cv.scope[1], cv.scope[2]:cv.scope[3]]
+        print(img)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur_gray = cv.gb(gray)
         edges = cv.canny(blur_gray)
@@ -330,6 +326,7 @@ def main():
 
         # print(1/(time.time()-t0))#32FPS，36ms
     pass
+
 
 if __name__ == '__main__':
     main()
