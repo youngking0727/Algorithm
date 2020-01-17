@@ -5,25 +5,46 @@ import numpy as np
 
 """
 
-
 def get_hline(image, kernel_size=(2, 20), dx=5, dy=2):
-    line_list = []
+    up_line_list = []
+    down_line_list = []
+    up_y_list = []
+    down_y_list = []
     shape = image.shape
     area_size = kernel_size[0] * kernel_size[1]
     w = shape[1]
     h = shape[0]
     for x in range(0, w - kernel_size[1], dx):
         for y in range(0, h - kernel_size[0], dy):
-            print(y, y+kernel_size[0], x, x+kernel_size[1])
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]] == 255)
             if (dit_sum / area_size) > 0.8 and not (x > 0.8 * w and y < 0.2 * h):  # 手指部分不考虑
-                if y < 0.2 * w or y > 0.8 * w:  # 只考虑接近框边缘的线
-                    line_list.append([x, y, x+kernel_size[1], y+kernel_size[0]])
-    return line_list
+                if y < 0.2 * w:  # 只考虑接近框边缘的线
+                    if y in up_y_list:
+                        ids = up_y_list.index(y)
+                        x = min(x, up_line_list[ids][0])
+                        x_max = max(x+kernel_size[1], up_line_list[ids][2])
+                        up_line_list[ids] = [x, y, x_max, y]
+                    else:
+                        up_line_list.append([x, y, x+kernel_size[1], y])
+                        up_y_list.append(y)
+                elif y > 0.8 * w:
+                    if y in down_y_list:
+                        ids = down_y_list.index(y)
+                        x = min(x, down_line_list[ids][0])
+                        x_max = max(x+kernel_size[1], down_line_list[ids][2])
+                        down_line_list[ids] = [x, y, x_max, y]
+                    else:
+                        down_line_list.append([x, y, x+kernel_size[1], y])
+                        down_y_list.append(y)
+
+    return up_line_list, down_line_list
 
 
 def get_vline(image, kernel_size=(20, 2), dx=2, dy=5):
-    line_list = []
+    left_line_list = []
+    right_line_list = []
+    left_x_list = []
+    right_x_list = []
     shape = image.shape
     area_size = kernel_size[0] * kernel_size[1]
     w = shape[1]
@@ -31,11 +52,59 @@ def get_vline(image, kernel_size=(20, 2), dx=2, dy=5):
     for x in range(0, w - kernel_size[1], dx):
         for y in range(0, h - kernel_size[0], dy):
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]]==255)
-            if (dit_sum / area_size) > 0.8:
-                line_list.append([x, y, x, y+kernel_size[0]])
-    return line_list
+            if (dit_sum / area_size) > 0.8 and not (x > 0.8 * w and y < 0.2 * h):
+                if x < 0.2 * h:
+                    if x in left_x_list:
+                        ids = left_x_list.index(x)
+                        y = min(y, left_line_list[ids][1])
+                        y_max = max(y + kernel_size[0], left_line_list[ids][3])
+                        left_line_list[ids] = [x, y, x, y_max]
+                    else:
+                        left_line_list.append([x, y, x, y+kernel_size[0]])
+                        left_x_list.append(x)
+                elif x > 0.8 * w:
+                    if x in right_x_list:
+                        ids = right_x_list.index(x)
+                        y = min(y, right_line_list[ids][1])
+                        y_max = max(y + kernel_size[0], right_line_list[ids][3])
+                        right_line_list[ids] = [x, y, x, y_max]
+                    else:
+                        right_line_list.append([x, y, x, y + kernel_size[0]])
+                        right_x_list.append(x)
 
-#def get_card(hline_list, vlint_list):
+    return left_line_list, right_line_list
+
+
+def get_card(line_lists):
+    up_line_list, down_line_list, left_line_list, right_line_list = line_lists
+    card_box = True
+    card_ratio = 1.58 # 信用卡长宽比
+    card = []
+    index_list = []
+    ratio_threshold = 0.1
+    error_threshold = 1
+
+    for i, lines in enumerate(line_lists):
+        if len(lines) == 0:
+            card_box = False
+        else:
+            index_list.append(i)
+
+    if card_box:
+        card_chose = []
+        for a, up in enumerate(up_line_list):
+            for b, down in enumerate(down_line_list):
+                for c, right in enumerate(right_line_list):
+                    for d, left in enumerate(left_line_list):
+                        ratio = (right[0] - left[0]) / (down[1] - up[1])
+                        error = abs(card_ratio - ratio)
+                        if error < error_threshold:
+                            error_threshold = error
+                            card_chose = [left[0], up[1], right[0], down[1]]
+        if error_threshold < ratio_threshold:
+            card = card_chose
+
+    return card
 
 
 def get_threshold(img):
