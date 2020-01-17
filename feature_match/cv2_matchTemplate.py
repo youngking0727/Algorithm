@@ -18,16 +18,16 @@
 
 import cv2
 # 读取目标图片
-target = cv2.imread("image/target.jpg",0)
+target = cv2.imread("image/target3.jpeg",0)
 # 读取模板图片
-template = cv2.imread("image/template.jpg",0)
+template = cv2.imread("image/template3.png",0)
 
 # 获得模板图片的高宽尺寸
 theight, twidth = template.shape[:2]
 template2 = cv2.resize(template, (int(0.5 * twidth), int(0.5 * theight)))
 cv2.imshow('haha', template)
 cv2.waitKey(0)
-# 执行模板匹配，采用的匹配方式cv2.TM_SQDIFF_NORMED
+# 执行模板匹配，采用的匹配方式cv2.TM_SQDIqFF_NORMED
 # 返回值是一个矩阵
 result = cv2.matchTemplate(target, template, cv2.TM_SQDIFF_NORMED)
 print(type(result),result.shape, target.shape, template.shape)
@@ -47,7 +47,7 @@ strmin_val = str(min_val)
 # min_loc：矩形定点
 # (min_loc[0]+twidth,min_loc[1]+theight)：矩形的宽高
 # (0,0,225)：矩形的边框颜色；2：矩形边框宽度
-cv2.rectangle(target, min_loc, (int(min_loc[0]+0.5 * twidth), int(min_loc[1]+0.5 * theight)),(0,0,225),2)
+cv2.rectangle(target, min_loc, (int(min_loc[0]+twidth), int(min_loc[1]+theight)),(0,0,225),2)
 # 显示结果,并将匹配值显示在标题栏上
 cv2.imshow("MatchResult----MatchingValue="+strmin_val,target)
 cv2.waitKey()

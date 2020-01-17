@@ -265,36 +265,43 @@ class MySetting():
 def main():
     # 第一次ROI范围
 
-    cap = cv2.VideoCapture('666.MP4')
+    cap = cv2.VideoCapture(0)
 
-    # _, img = cap.read()
-    img = cv2.imread("1.jpg")
+    _, img = cap.read()
+    cv2.imwrite("2.jpg", img)
     mvname = 'laotie.mp4'
     if not os.path.isfile(mvname):
         cvwriter = cv2.VideoWriter(mvname, cv2.VideoWriter_fourcc(*'MP4V'), 30, img.shape[-2::-1])
-    cv2.namedWindow('', cv2.WINDOW_KEEPRATIO)
-    cv2.resizeWindow('', 480, 640)
-    cv2.moveWindow('', 0, 0)
+    #cv2.namedWindow('', cv2.WINDOW_KEEPRATIO)
+    #cv2.resizeWindow('', 480, 640)
+    #cv2.moveWindow('', 0, 0)
     cv = MySetting(img)
     left, right = Line('l'), Line('r')
     direc = Direction(6, range=0.06)
     rot = 0
     while True:
         # t0 = time.time()
-        img = cv2.imread("1.jpg")
+        _, img = cap.read()
+        cv2.imwrite("3.jpg", img)
+        print(img)
+        cv2.imshow('1', img)
+        #img = cv2.imread("2.jpg")
         print(img.shape)
         img = img[cv.scope[0]:cv.scope[1], cv.scope[2]:cv.scope[3]]
-        print(img)
+        print('print(img.shape)', img.shape)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite('gray.jpg', gray)
         blur_gray = cv.gb(gray)
         edges = cv.canny(blur_gray)
-        # print(edges.shape)
+        print('edge', edges.shape)
         masked_edges = cv.roi(edges)
         ocimg = cv.oc(masked_edges)
-        cv2.imshow('1', ocimg)
+        #cv2.imshow('1', img)
         # 霍夫
         lines = cv.houghlinesp(ocimg)
-        # print(lines)
+        print('lines', lines)
+        if lines is None:
+            continue
         # 整理图像
         # erosion_rgb = cv2.cvtColor(ocimg, cv2.COLOR_GRAY2RGB)
         # 斜率确定直线

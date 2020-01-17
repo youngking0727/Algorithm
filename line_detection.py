@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import time
 
-'''根据极角极径参数在原图像中画线'''
+'''根据极角极径参数在原图像中画线, 在操场上找线'''
 
 
 def draw_lines(img, lines, color=[255, 0, 0], thickness=6):
@@ -88,7 +88,7 @@ masked_edge_image = cv2.bitwise_and(edge_image, mask)
 print("fafasfafafs")
 # 显示可视区的边缘提取二值图像
 cv2.imwrite("masked_edge.jpg", masked_edge_image)
-s = cv2.getStructuringElement(cv2.M)
+#s = cv2.getStructuringElement(cv2.M)
 
 print(np.array([[v1, v2, v3, v4]], dtype=np.int32))
 # 霍夫线变换
