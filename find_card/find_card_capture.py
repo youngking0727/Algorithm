@@ -5,6 +5,7 @@ import numpy as np
 
 """
 
+
 def get_hline(image, kernel_size=(2, 20), dx=5, dy=2):
     up_line_list = []
     down_line_list = []
@@ -18,7 +19,7 @@ def get_hline(image, kernel_size=(2, 20), dx=5, dy=2):
         for y in range(0, h - kernel_size[0], dy):
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]] == 255)
             if (dit_sum / area_size) > 0.8 and not (x > 0.8 * w and y < 0.2 * h):  # 手指部分不考虑
-                if y < 0.2 * w:  # 只考虑接近框边缘的线
+                if y < 0.2 * h:  # 只考虑接近框边缘的线
                     if y in up_y_list:
                         ids = up_y_list.index(y)
                         x = min(x, up_line_list[ids][0])
@@ -27,7 +28,7 @@ def get_hline(image, kernel_size=(2, 20), dx=5, dy=2):
                     else:
                         up_line_list.append([x, y, x+kernel_size[1], y])
                         up_y_list.append(y)
-                elif y > 0.8 * w:
+                elif y > 0.8 * h:
                     if y in down_y_list:
                         ids = down_y_list.index(y)
                         x = min(x, down_line_list[ids][0])
@@ -37,7 +38,7 @@ def get_hline(image, kernel_size=(2, 20), dx=5, dy=2):
                         down_line_list.append([x, y, x+kernel_size[1], y])
                         down_y_list.append(y)
 
-    return up_line_list, down_line_list
+    return up_line_list[:2], down_line_list[:2]
 
 
 def get_vline(image, kernel_size=(20, 2), dx=2, dy=5):
@@ -53,7 +54,7 @@ def get_vline(image, kernel_size=(20, 2), dx=2, dy=5):
         for y in range(0, h - kernel_size[0], dy):
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]]==255)
             if (dit_sum / area_size) > 0.8 and not (x > 0.8 * w and y < 0.2 * h):
-                if x < 0.2 * h:
+                if x < 0.2 * w:
                     if x in left_x_list:
                         ids = left_x_list.index(x)
                         y = min(y, left_line_list[ids][1])
@@ -114,8 +115,11 @@ def get_threshold(img):
     gradY = cv2.Sobel(grey, ddepth=cv2.CV_32F, dx=0, dy=1, ksize=-1)
     gradient = cv2.subtract(gradX, gradY)
     gradient = cv2.convertScaleAbs(gradient)
-    ret, thresh = cv2.threshold(gradient, 200, 255, cv2.THRESH_BINARY)
+    ret, thresh = cv2.threshold(gradient, 150, 255, cv2.THRESH_BINARY)
     return thresh
+
+
+
 
 
 cap = cv2.VideoCapture(0)
