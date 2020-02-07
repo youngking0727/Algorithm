@@ -15,8 +15,8 @@ def get_hline(image, kernel_size=(2, 20), dx=5, dy=2):
     area_size = kernel_size[0] * kernel_size[1]
     w = shape[1]
     h = shape[0]
-    for x in range(0, w - kernel_size[1], dx):
-        for y in range(0, h - kernel_size[0], dy):
+    for y in range(0, w - kernel_size[0], dy):
+        for x in range(0, h - kernel_size[1], dx):
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]] == 255)
             if (dit_sum / area_size) > 0.8 and not (x > 0.8 * w and y < 0.2 * h):  # 手指部分不考虑
                 if y < 0.2 * h:  # 只考虑接近框边缘的线
