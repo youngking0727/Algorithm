@@ -10,7 +10,8 @@ __pycache__/
 *.mp4
 *.avi
 *.mov
-
+*.DS_Store
+*.xml
 #model
 *.pth
 *.data

@@ -14,7 +14,7 @@ class line:
         self.counts = 0
 
 
-def get_hline(image, kernel_size=(1, 30), dx=5, dy=2, threshold=0.8, confirm_threshold=0.3):
+def get_hline(image, kernel_size=(1, 30), dx=5, dy=2, threshold=0.8, confirm_threshold=0.28, confirm_ratio=0.8):
 
     up_line_list = []
     down_line_list = []
@@ -24,8 +24,8 @@ def get_hline(image, kernel_size=(1, 30), dx=5, dy=2, threshold=0.8, confirm_thr
     area_size = kernel_size[0] * kernel_size[1]
     w = shape[1]
     h = shape[0]
-    for y in range(0, h - kernel_size[0], dy):
-        for x in range(0, w - kernel_size[1], dx):
+    for y in range(2, h - kernel_size[0]-2, dy):
+        for x in range(2, w - kernel_size[1] - 2, dx):
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]] == 255)
             if (dit_sum / area_size) > threshold and not (x > 0.7 * w and y < 0.3 * h):
                 if y < 0.2 * h:  # 只考虑接近框边缘的线
@@ -62,7 +62,6 @@ def get_hline(image, kernel_size=(1, 30), dx=5, dy=2, threshold=0.8, confirm_thr
     confirm_line_count = 0
 
     # todo 先进行最近的线的合并,暂时不用，评估效果决定是否添加
-    # for line in up_line_list:
 
     # 对检出的线开始进行判断是不是确定线，如果是确定线，应该把之前的删掉，只加入确认线，并且继续添加
     for line in up_line_list:
@@ -70,10 +69,13 @@ def get_hline(image, kernel_size=(1, 30), dx=5, dy=2, threshold=0.8, confirm_thr
         length = line[2] - line[0]
         # 如果有很长的线而且255像素值总量大于一个阈值，我们就认为是确认线
 
-        if length > confirm_threshold * shape[1] and (np.sum(image[line[1]-1:line[1]+2, line[0]:line[2]] == 255)) > 0.85/3:
+        if length > confirm_threshold * shape[1] and (np.sum(image[line[1], line[0]:line[2]] == 255)) / (line[2] - line[0]) > confirm_ratio:
             confirm_line_count += 1
             up_line_list_confirm.append(line)  # 添加确认线
-        if confirm_line_count == 4:  # 最多4根，说明这根线足够宽
+        num = 4
+        if kernel_size[0] == 1:
+            num = 2
+        if confirm_line_count == num:  # 最多4根，说明这根线足够宽
             break
 
     confirm_line_count = 0
@@ -83,17 +85,19 @@ def get_hline(image, kernel_size=(1, 30), dx=5, dy=2, threshold=0.8, confirm_thr
         length = line[2] - line[0]
         # 如果有很长的线而且255像素值总量大于一个阈值，我们就认为是确认线
 
-        if length > confirm_threshold * shape[1] and (
-        np.sum(image[line[1] - 1:line[1] + 2, line[0]:line[2]] == 255)) > 0.85 / 3:
+        if length > confirm_threshold * shape[1] and (np.sum(image[line[1], line[0]:line[2]] == 255)) / (line[2] - line[0]) > confirm_ratio:
             confirm_line_count += 1
             down_line_list_confirm.append(line)  # 添加确认线
-        if confirm_line_count == 4:  # 最多4根，说明这根线足够宽
+        num = 4
+        if kernel_size[0] == 1:
+            num = 2
+        if confirm_line_count == num:  # 最多4根，说明这根线足够宽
             break
 
     return up_line_list_choose, down_line_list_choose, up_line_list_confirm, down_line_list_confirm
 
 
-def get_vline(image, kernel_size=(30, 1), dx=2, dy=5, threshold=0.8, confirm_threshold=0.2):
+def get_vline(image, kernel_size=(30, 1), dx=2, dy=5, threshold=0.8, confirm_threshold=0.2, confirm_ratio=0.8):
     left_line_list = []
     right_line_list = []
     left_x_list = []
@@ -102,8 +106,8 @@ def get_vline(image, kernel_size=(30, 1), dx=2, dy=5, threshold=0.8, confirm_thr
     area_size = kernel_size[0] * kernel_size[1]
     w = shape[1]
     h = shape[0]
-    for x in range(0, w - kernel_size[1], dx):
-        for y in range(0, h - kernel_size[0], dy):
+    for x in range(2, w - kernel_size[1]-2, dx):
+        for y in range(2, h - kernel_size[0]-2, dy):
             dit_sum = np.sum(image[y:y+kernel_size[0], x:x+kernel_size[1]]==255)
             if (dit_sum / area_size) > threshold and not (x > 0.8 * w and y < 0.2 * h):
                 if x < 0.2 * w:
@@ -139,36 +143,47 @@ def get_vline(image, kernel_size=(30, 1), dx=2, dy=5, threshold=0.8, confirm_thr
 
     for line in left_line_list:
         left_line_list_choose.append(line)
-        length = line[2] - line[0]
-
-        if length > confirm_threshold * shape[1] and (np.sum(image[line[1]:line[3], line[0]-1:line[0]+2] == 255)) > 0.85:
+        length = line[3] - line[1]
+        # print('debug', line, length, (np.sum(image[line[1]:line[3], line[0]] == 255)), confirm_threshold * shape[0])
+        if length > confirm_threshold * shape[0] and (np.sum(image[line[1]:line[3], line[0]] == 255)) / (line[3] - line[1]) > confirm_ratio:
             confirm_line_count += 1
             left_line_list_confirm.append(line)  # 添加确认线
-        if confirm_line_count == 4:  # 最多4根，说明这根线足够宽
+        num = 4
+        if kernel_size[1] == 1:
+            num = 2
+        if confirm_line_count == num:  # 最多4根，说明这根线足够宽
             break
 
     confirm_line_count = 0
     right_line_list.reverse()
     for line in right_line_list:
         right_line_list_choose.append(line)
-        length = line[2] - line[0]
-        if length > confirm_threshold * shape[1] and (np.sum(image[line[1]:line[3], line[0]-1:line[0]+2] == 255)) > 0.85/3:
+        length = line[3] - line[1]
+        if length > confirm_threshold * shape[0] and (np.sum(image[line[1]:line[3], line[0]] == 255)) / (line[3] - line[1]) > confirm_ratio:
             confirm_line_count += 1
             right_line_list_confirm.append(line)  # 添加确认线
-        if confirm_line_count == 4:  # 最多4根，说明这根线足够宽
+        num = 4
+        if kernel_size[1] == 1:
+            num = 2
+        if confirm_line_count == num:  # 最多4根，说明这根线足够宽
             break
 
     return left_line_list_choose, right_line_list_choose, left_line_list_confirm, right_line_list_confirm
 
 
-def get_card(line_lists):
+def get_card(line_lists, is_adjust=False):
 
     up_line_list, down_line_list, left_line_list, right_line_list = line_lists
+    print('up', up_line_list)
+    print('down', down_line_list)
+    print('left', left_line_list)
+    print('right', right_line_list)
     card_box = True
-    card_ratio = 1.58  # 信用卡长宽比
+    card_ratio = 85.60 / 53.98  # 信用卡长宽比
     card = []
     index_list = []
-    ratio_threshold = 0.03  # todo 最佳就是0.02就可以了，而且返回策略不是以比例来衡量了
+    ratio_threshold = 0.08  # todo 最佳就是0.02就可以了，而且返回策略不是以比例来衡量了
+    adjust_threshold = 0.3
     error_threshold = 1
     box_ratio = 0
 
@@ -185,15 +200,19 @@ def get_card(line_lists):
                 for c, right in enumerate(right_line_list):
                     for d, left in enumerate(left_line_list):
                         ratio = (right[0] - left[0]) / (down[1] - up[1])
-                        print('卡的比例是', box_ratio)
+                        # print('卡的比例是', box_ratio, [left[0], up[1], right[0], down[1]])
                         error = abs(card_ratio - ratio)
                         if error < error_threshold:
                             error_threshold = error
                             box_ratio = ratio
                             card_chose = [left[0], up[1], right[0], down[1]]
+                            print('选的卡是', [left[0], up[1], right[0], down[1]], ratio, error_threshold)
 
         if error_threshold < ratio_threshold:
             card = card_chose
+        elif is_adjust and error_threshold < adjust_threshold:
+            card = card_chose
+
 
     return card
 
@@ -238,7 +257,7 @@ def get_threshold(img):
     gradY = cv2.Sobel(grey, ddepth=cv2.CV_32F, dx=0, dy=1, ksize=-1)
     gradient = cv2.subtract(gradX, gradY)
     gradient = cv2.convertScaleAbs(gradient)
-    ret, thresh_hsv = cv2.threshold(gradient, 160, 255, cv2.THRESH_BINARY)
+    ret, thresh_hsv = cv2.threshold(gradient, 150, 255, cv2.THRESH_BINARY)
     cv2.imshow('hsv_thresh', thresh_hsv)
     cv2.waitKey(0)
 
@@ -247,11 +266,19 @@ def get_threshold(img):
 
 def draw_line(img, line_list):
 
-    for lines in line_list:
+    for i, lines in enumerate(line_list):
+        if i == 0:
+            color = (0, 0, 255)
+        elif i == 1:
+            color = (255, 0, 0)
+        elif i == 2:
+            color = (255, 255, 0)
+        else:
+            color = (0, 255, 0)
         if len(lines) != 0:
             for i in range(len(lines)):
                 cv2.line(img, (lines[i][0], lines[i][1]),
-                         (lines[i][2], lines[i][3]), (0, 0, 255), 1, cv2.LINE_AA)
+                         (lines[i][2], lines[i][3]), color, 2, cv2.LINE_AA)
 
 
 def file_name(file_dir):
@@ -262,10 +289,39 @@ def file_name(file_dir):
         print(root, dirs, files)
         dirs_list.append(dirs)
         for file in files:
-            file_list.append(file)
-            file_name_list.append(os.path.join(root, file))
+            if '.DS_Store' in file:
+                pass
+            else:
+                file_list.append(file)
+                file_name_list.append(os.path.join(root, file))
     return file_list, file_name_list, dirs_list
 
+
+'''
+def get_confirm_line(line_lists,  confirm_line_lists):
+
+    confirm_line_list = [[], [], [], []]
+
+    for i in len(confirm_line_lists):
+
+        list_one = confirm_line_lists[0][i]
+        list_two = confirm_line_lists[1][i]
+        list_thr = confirm_line_lists[2][i]
+        list_fou = confirm_line_lists[3][i]
+
+        line_list = list_one + list_two + list_thr + list_fou
+        # 把所有的坐标拿出来加一下，然后做差，最后再循环一遍，把不合适的删掉
+        for line in line_list:
+            if i < 2:
+            idx =
+
+        confirm_line_list[i] = line_list
+
+    up_line_list = [line_lists[0], ]
+    down_line_list = [line_lists[0], ]
+    left_line_list = [line_lists[0], ]
+    right_line_list = [line_lists[0], ]
+'''
 
 def get_result(img):
     thresh_image, canny, hsv, hsv_canny = get_threshold(img)
@@ -281,35 +337,36 @@ def get_result(img):
     # 使用canny和大的kernel去获得确认的线, 这里设置小的kernel，因为逻辑里有并线操作
     # 也不用太大，因为要组装，最后判断组装的直线是不是我们要的直线
     # 因为kernel_size是1，所以不会出现复线的情况
-    up_line_list, down_line_list, up_line_list_confirm, down_line_list_confirm = get_hline(canny, kernel_size=(1, 25), dx=3, dy=1, threshold=0.65)
-    left_line_list, right_line_list, left_line_list_confirm, right_line_list_confirm = get_vline(canny, kernel_size=(20, 1), dx=1, dy=3, threshold=0.65)
+    up_line_list, down_line_list, up_line_list_confirm, down_line_list_confirm = get_hline(canny, kernel_size=(1, 30), dx=3, dy=1, threshold=0.75, confirm_threshold=0.32, confirm_ratio=0.82)
+    left_line_list, right_line_list, left_line_list_confirm, right_line_list_confirm = get_vline(canny, kernel_size=(25, 1), dx=1, dy=3, threshold=0.75, confirm_threshold=0.25, confirm_ratio=0.82)
 
-    line_lists = [up_line_list, down_line_list, left_line_list, right_line_list]
-    draw_line(img_copy, line_lists)
+    canny_line_lists = [up_line_list, down_line_list, left_line_list, right_line_list]
+    draw_line(img_copy, canny_line_lists)
     # cv2.imwrite('line[1,20].jpg', frame)
     cv2.imshow('frame_small_line', img_copy)
     cv2.waitKey(0)
 
-    line_lists = [up_line_list_confirm, down_line_list_confirm, left_line_list_confirm, right_line_list_confirm]
-    draw_line(img_copy2, line_lists)
+    canny_confirm_line_lists = [up_line_list_confirm, down_line_list_confirm, left_line_list_confirm, right_line_list_confirm]
+    draw_line(img_copy2, canny_confirm_line_lists)
     # cv2.imwrite('line[1,20].jpg', frame)
     cv2.imshow('frame_small_confirm', img_copy2)
     cv2.waitKey(0)
 
-    up_line_list_hsv, down_line_list_hsv, up_line_list_hsv_confirm, down_line_list_hsv_confirm = get_hline(hsv_canny, kernel_size=(1, 25), dx=3, dy=1)
-    left_line_list_hsv, right_line_list_hsv, left_line_list_hsv_confirm, right_line_list_hsv_confirm = get_vline(hsv_canny, kernel_size=(20, 1), dx=1, dy=3)
+    up_line_list_hsv, down_line_list_hsv, up_line_list_hsv_confirm, down_line_list_hsv_confirm = get_hline(hsv_canny, kernel_size=(1, 30), dx=3, dy=1, threshold=0.75, confirm_threshold=0.32, confirm_ratio=0.82)
+    left_line_list_hsv, right_line_list_hsv, left_line_list_hsv_confirm, right_line_list_hsv_confirm = get_vline(hsv_canny, kernel_size=(25, 1), dx=1, dy=3, threshold=0.75, confirm_threshold=0.25, confirm_ratio=0.82)
 
-    line_lists = [up_line_list_hsv, down_line_list_hsv, left_line_list_hsv, right_line_list_hsv]
-    draw_line(img_copy4, line_lists)
+    hsv_line_lists = [up_line_list_hsv, down_line_list_hsv, left_line_list_hsv, right_line_list_hsv]
+    draw_line(img_copy4, hsv_line_lists)
     # cv2.imwrite('line[1,20].jpg', frame)
     cv2.imshow('frame_small_line_hsv_canny', img_copy4)
     cv2.waitKey(0)
 
-    line_lists = [up_line_list_hsv_confirm, down_line_list_hsv_confirm, left_line_list_hsv_confirm, right_line_list_hsv_confirm]
-    draw_line(img_copy3, line_lists)
+    hsv_confirm_line_lists = [up_line_list_hsv_confirm, down_line_list_hsv_confirm, left_line_list_hsv_confirm, right_line_list_hsv_confirm]
+    draw_line(img_copy3, hsv_confirm_line_lists)
     # cv2.imwrite('line[1,20].jpg', frame)
     cv2.imshow('frame_small_confirm_hsv_canny', img_copy3)
     cv2.waitKey(0)
+
 
     # 这里应该进行一下组装
     if len(up_line_list_confirm) == 0:
@@ -329,85 +386,100 @@ def get_result(img):
     left_line_list.extend(left_line_list_hsv)
     right_line_list.extend(right_line_list_hsv)
 
-    # 组装完要看看哪些边的确定直线为0
-    if 0 in [len(up_line_list_confirm), len(down_line_list_confirm), len(left_line_list_confirm), len(right_line_list_confirm)]:
-        up_line_list_th, down_line_list_th, up_line_list_th_confirm, down_line_list_th_confirm = get_hline(thresh_image,
-                                                                                               kernel_size=(2, 35),
-                                                                                               dx=3, dy=2,
-                                                                                               threshold=0.8)
-        left_line_list_th, right_line_list_th, left_line_list_th_confirm, right_line_list_th_confirm = get_vline(thresh_image,
-                                                                                                     kernel_size=(
-                                                                                                     30, 2), dx=2, dy=3,
-                                                                                                     threshold=0.8)
+    up_line_list_th, down_line_list_th, up_line_list_th_confirm, down_line_list_th_confirm = get_hline(thresh_image,
+                                                                                           kernel_size=(2, 35),
+                                                                                           dx=3, dy=1,
+                                                                                           threshold=0.8, confirm_threshold=0.35, confirm_ratio=0.85)
+    left_line_list_th, right_line_list_th, left_line_list_th_confirm, right_line_list_th_confirm = get_vline(thresh_image,
+                                                                                                 kernel_size=(25, 2), dx=1, dy=3,
+                                                                                                 threshold=0.8, confirm_threshold=0.25, confirm_ratio=0.85)
 
-        line_lists = [up_line_list_th, down_line_list_th, left_line_list_th, right_line_list_th]
-        draw_line(img_copy5, line_lists)
-        # cv2.imwrite('line[1,20].jpg', frame)
-        cv2.imshow('frame_small_line_th', img_copy5)
-        cv2.waitKey(0)
+    th_line_lists = [up_line_list_th, down_line_list_th, left_line_list_th, right_line_list_th]
+    draw_line(img_copy5, th_line_lists)
+    # cv2.imwrite('line[1,20].jpg', frame)
+    cv2.imshow('frame_small_line_th', img_copy5)
+    cv2.waitKey(0)
 
-        line_lists = [up_line_list_th_confirm, down_line_list_th_confirm, left_line_list_th_confirm, right_line_list_th_confirm]
-        draw_line(img_copy6, line_lists)
-        # cv2.imwrite('line[1,20].jpg', frame)
-        cv2.imshow('frame_small_confirm_th', img_copy6)
-        cv2.waitKey(0)
+    th_confirm_line_lists = [up_line_list_th_confirm, down_line_list_th_confirm, left_line_list_th_confirm, right_line_list_th_confirm]
+    draw_line(img_copy6, th_confirm_line_lists)
+    # cv2.imwrite('line[1,20].jpg', frame)
+    cv2.imshow('frame_small_confirm_th', img_copy6)
+    cv2.waitKey(0)
 
-        up_line_list_hsvth, down_line_list_hsvth, up_line_list_hsvth_confirm, down_line_list_hsvth_confirm = get_hline(hsv,
-                                                                                                               kernel_size=(
-                                                                                                               2, 35),
-                                                                                                               dx=3,
-                                                                                                               dy=2)
-        left_line_list_hsvth, right_line_list_hsvth, left_line_list_hsvth_confirm, right_line_list_hsvth_confirm = get_vline(
-            hsv, kernel_size=(30, 2), dx=2, dy=3)
+    up_line_list_hsvth, down_line_list_hsvth, up_line_list_hsvth_confirm, down_line_list_hsvth_confirm = get_hline(hsv,
+                                                                                                                        kernel_size=(2, 35),
+                                                                                                                        dx=3,
+                                                                                                                        dy=1,
+                                                                                                                        threshold=0.8,
+                                                                                                                        confirm_threshold=0.35,
+                                                                                                                        confirm_ratio=0.88)
+    left_line_list_hsvth, right_line_list_hsvth, left_line_list_hsvth_confirm, right_line_list_hsvth_confirm = get_vline(hsv,
+                                                                                                                         kernel_size=(25, 2),
+                                                                                                                         dx=1,
+                                                                                                                         dy=3,
+                                                                                                                         threshold=0.8,
+                                                                                                                         confirm_threshold=0.25,
+                                                                                                                         confirm_ratio=0.88)
 
-        line_lists = [up_line_list_hsvth, down_line_list_hsvth, left_line_list_hsvth, right_line_list_hsvth]
-        draw_line(img_copy7, line_lists)
-        # cv2.imwrite('line[1,20].jpg', frame)
-        cv2.imshow('frame_small_line_hsvth', img_copy7)
-        cv2.waitKey(0)
+    hsvth_line_lists = [up_line_list_hsvth, down_line_list_hsvth, left_line_list_hsvth, right_line_list_hsvth]
+    draw_line(img_copy7, hsvth_line_lists)
+    # cv2.imwrite('line[1,20].jpg', frame)
+    cv2.imshow('frame_small_line_hsvth', img_copy7)
+    cv2.waitKey(0)
 
-        line_lists = [up_line_list_hsvth_confirm, down_line_list_hsvth_confirm, left_line_list_hsvth_confirm,
-                      right_line_list_hsvth_confirm]
-        draw_line(img_copy8, line_lists)
-        # cv2.imwrite('line[1,20].jpg', frame)
-        cv2.imshow('frame_small_confirm_hsvth', img_copy8)
-        cv2.waitKey(0)
+    hsvth_confirm_line_lists = [up_line_list_hsvth_confirm, down_line_list_hsvth_confirm, left_line_list_hsvth_confirm,
+                                right_line_list_hsvth_confirm]
+    draw_line(img_copy8, hsvth_confirm_line_lists)
+    # cv2.imwrite('line[1,20].jpg', frame)
+    cv2.imshow('frame_small_confirm_hsvth', img_copy8)
+    cv2.waitKey(0)
 
-        # 继续组装
-        if len(up_line_list_confirm) == 0:
-            up_line_list_confirm.extend(up_line_list_th_confirm)
 
-        if len(down_line_list_confirm) == 0:
-            down_line_list_confirm.extend(down_line_list_th_confirm)
+    # 继续组装
+    if len(up_line_list_confirm) == 0:
+        up_line_list_confirm.extend(up_line_list_th_confirm)
+        up_line_list_confirm.extend(up_line_list_hsvth_confirm)
 
-        if len(left_line_list_confirm) == 0:
-            left_line_list_confirm.extend(left_line_list_th_confirm)
+    if len(down_line_list_confirm) == 0:
+        down_line_list_confirm.extend(down_line_list_th_confirm)
+        down_line_list_confirm.extend(down_line_list_hsvth_confirm)
 
-        if len(right_line_list_confirm) == 0:
-            right_line_list_confirm.extend(right_line_list_th_confirm)
+    if len(left_line_list_confirm) == 0:
+        left_line_list_confirm.extend(left_line_list_th_confirm)
+        left_line_list_confirm.extend(left_line_list_hsvth_confirm)
 
-        if len(up_line_list_confirm) == 0:
-            up_line_list_confirm.extend(up_line_list_hsvth_confirm)
+    if len(right_line_list_confirm) == 0:
+        right_line_list_confirm.extend(right_line_list_th_confirm)
+        right_line_list_confirm.extend(right_line_list_hsvth_confirm)
 
-        if len(down_line_list_confirm) == 0:
-            down_line_list_confirm.extend(down_line_list_hsvth_confirm)
-
-        if len(left_line_list_confirm) == 0:
-            left_line_list_confirm.extend(left_line_list_hsvth_confirm)
-
-        if len(right_line_list_confirm) == 0:
-            right_line_list_confirm.extend(right_line_list_hsvth_confirm)
+    is_adjust = True
 
     if len(up_line_list_confirm) == 0:
+        is_adjust = False
+        if len(up_line_list) == 0:
+            up_line_list.extend(up_line_list_th)
+            up_line_list.extend(up_line_list_hsvth)
         up_line_list_confirm = up_line_list
 
     if len(down_line_list_confirm) == 0:
+        is_adjust = False
+        if len(down_line_list) == 0:
+            down_line_list.extend(down_line_list_th)
+            down_line_list.extend(down_line_list_hsvth)
         down_line_list_confirm = down_line_list
 
     if len(left_line_list_confirm) == 0:
+        is_adjust = False
+        if len(left_line_list) == 0:
+            left_line_list.extend(left_line_list_th)
+            left_line_list.extend(left_line_list_hsvth)
         left_line_list_confirm = left_line_list
 
     if len(right_line_list_confirm) == 0:
+        is_adjust = False
+        if len(right_line_list) == 0:
+            right_line_list.extend(right_line_list_th)
+            right_line_list.extend(right_line_list_hsvth)
         right_line_list_confirm = right_line_list
 
     line_lists = [up_line_list_confirm, down_line_list_confirm, left_line_list_confirm, right_line_list_confirm]
@@ -417,16 +489,27 @@ def get_result(img):
     cv2.imshow('frame_small', img)
     cv2.waitKey(0)
 
-    card_rect = get_card(line_lists)
-    print('检测到的卡片', card_rect)
+    card_rect = get_card(line_lists, is_adjust)
+    print('检测到的卡片', card_rect, is_adjust)
     if len(card_rect) != 0:
         cv2.rectangle(img, (card_rect[0], card_rect[1]), (card_rect[2], card_rect[3]), (0, 0, 255), 2)
         cv2.imshow('frame_small', img)
         cv2.waitKey(0)
 
+    line_lists = [canny_line_lists, hsv_line_lists, th_line_lists, hsvth_line_lists]
+    confirm_line_lists = [canny_confirm_line_lists, hsv_confirm_line_lists, th_confirm_line_lists, hsvth_confirm_line_lists]
+
+    """
+    finally_line_lists = get_confirm_line(line_lists,  confirm_line_lists)
+    card_rect = get_card(finally_line_lists)
+    print('检测到的卡片', card_rect)
+    if len(card_rect) != 0:
+        cv2.rectangle(img, (card_rect[0], card_rect[1]), (card_rect[2], card_rect[3]), (0, 0, 255), 2)
+        cv2.imshow('frame_small', img)
+        cv2.waitKey(0)
+    """
 
 file_list, file_name_list, _ = file_name('data/')
-
 
 for i, file in enumerate(file_name_list):
     frame = cv2.imread(file)
@@ -455,6 +538,42 @@ for i, file in enumerate(file_name_list):
         frame_small = frame[30:166, 132:322, :]
     else:
         frame_small = frame[6:99, 65:209, :]
+    cv2.imshow('frame_small', frame_small)
+    cv2.waitKey(0)
+
+    get_result(frame_small)
+
+file_list, file_name_list, _ = file_name('data2/')
+
+for i, file in enumerate(file_name_list):
+    frame = cv2.imread(file)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    cv2.imshow('frame', frame)
+    cv2.waitKey(0)
+    print(i)
+
+    frame_small = frame[139:320, 240:515, :]
+    if i in [4, 5, 0]:
+        frame_small = frame[38:208, 139:413, :]
+    elif i in [1]:
+        frame_small = frame[79:263, 219:542, :]
+    elif i in [2, 3]:
+        frame_small = frame[38:111, 95:240, :]
+    elif i in [6, 10]:
+        frame_small = frame[30:117, 91:232, :]
+    elif i in [7]:
+        frame_small = frame[31:112, 91:217, :]
+    elif i in [8, 9]:
+        frame_small = frame[70:271, 225:540, :]
+    elif i in [11, 14]:
+        frame_small = frame[90:280, 242:570, :]
+    elif i in [12]:
+        frame_small = frame[70:256, 225:522, :]
+    elif i in [13]:
+        frame_small = frame[77:270, 230:580, :]
+    elif i in [15]:
+        frame_small = frame[43:190, 152:403, :]
+
     cv2.imshow('frame_small', frame_small)
     cv2.waitKey(0)
 
