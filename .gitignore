@@ -22,6 +22,8 @@ __pycache__/
 *.tar
 *.t7
 
+.idea
+
 # C extensions
 *.so
 
