@@ -21,7 +21,7 @@ __pycache__/
 *.gzip
 *.tar
 *.t7
-
+.ipynb_checkpoints
 .idea
 
 # C extensions
